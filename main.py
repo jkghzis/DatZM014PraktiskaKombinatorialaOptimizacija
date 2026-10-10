@@ -29,6 +29,7 @@ VACCINATION_DURATION: datetime.timedelta = datetime.timedelta(minutes=10)
 
 """Simulated annealing variables"""
 
+@dataclass
 class Location:
     x: float = 0.0
     y: float = 0.0
