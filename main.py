@@ -29,72 +29,66 @@ VACCINATION_DURATION: datetime.timedelta = datetime.timedelta(minutes=10)
 
 """Simulated annealing variables"""
 
+
 @dataclass
 class Location:
     x: float = 0.0
     y: float = 0.0
-    def __init__(self, x: float, y: float) -> None:
-        self.x = x
-        self.y = y
-        pass
+
     def print(self):
         print(f"Location: ({self.x}, {self.y})")
 
+@dataclass
 class TimeWindow:
-    id: uuid.UUID = uuid.uuid4() # TODO How to properly set it? SHould use UUID or int?
-    fromTime: datetime.time
-    toTime: datetime.time
-    def __init__(self, fromTime: datetime.time, toTime: datetime.time) -> None:
-        self.fromTime = fromTime
-        self.toTime = toTime
-        pass
+    from_time: datetime.time
+    to_time: datetime.time
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
     def print(self):
-        print(f"TimeWindow {self.id}: {self.fromTime} - {self.toTime}")
+        print(f"TimeWindow {self.id}: {self.from_time} - {self.to_time}")
 
+@dataclass
+class AvailabilityTimeWindow:
+    from_time: datetime.time
+    to_time: datetime.time
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+    def print(self):
+        print(f"AvailabilityTimeWindow {self.id}: {self.from_time} - {self.to_time}")
+
+@dataclass
 class VacCen:
-    id: uuid.UUID = uuid.uuid4() # TODO How to properly set it? SHould use UUID or int?
     location: Location
-    timeWindows: list[TimeWindow] = []
-    def __init__(self, location: Location, timeWindows: list[TimeWindow]) -> None:
-        self.location = location
-        self.timeWindows = timeWindows
-        pass
+    time_windows: list[TimeWindow] = []
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
     def print(self):
         print(f"VacCen: {self.id}")
         print(self.location.print())
         print("timeWindows:")
-        for tw in self.timeWindows:
+        for tw in self.time_windows:
             tw.print()
 
+@dataclass
 class Hum:
-    id: uuid.UUID = uuid.uuid4() # TODO How to properly set it? SHould use UUID or int?
     location: Location
-    availableTimeWindow: TimeWindow
-    def __init__(self, location: Location, availableTimeWindow: TimeWindow) -> None:
-        self.location = location
-        self.availableTimeWindow = availableTimeWindow
-        pass
+    available_time_window: AvailabilityTimeWindow
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
     def print(self):
         print(f"Hum: {self.id}")
         print(self.location.print())
-        print(self.availableTimeWindow.print())
+        print(self.available_time_window.print())
 
+@dataclass
 class Assignment:
-    id: uuid.UUID = uuid.uuid4() # TODO I think this should def be a uuid?
     hum: Hum
     vacCen: VacCen
-    timeWindow: TimeWindow
-    def __init__(self, hum: Hum, vacCen: VacCen, timeWindow: TimeWindow) -> None:
-        self.hum = hum
-        self.vacCen = vacCen
-        self.timeWindow = timeWindow
-        pass
+    time_window: TimeWindow
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
     def print(self):
         print(f"Assginment: {self.id}")
         print(self.hum.print())
         print(self.vacCen.print())
-        print(self.timeWindow.print())
+        print(self.time_window.print())
 
+@dataclass
 class solution:
     """
     A represenation of the solution or time schedule for persons
@@ -109,8 +103,6 @@ class solution:
     """    
     # TODO what are the attributes/fields of the solution?
     assignments: list[Assignment] = []
-    def __init__(self) -> None:
-        pass
     def cost(self):
         """
         Calculates the cost of the solution.
