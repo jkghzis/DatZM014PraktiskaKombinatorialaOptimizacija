@@ -20,3 +20,5 @@ python experiments.py medium_cooling_095	// ...
 ```
 # *results
 Satur eksperimentā iegūtos rezultātus. No šiem datiem ir iespējams arī veidot vizualizācijas, kas darba laikā netika izstrādāta.
+
+Piezīme: benchmark csv satur kolonnu optimality_gap_percent, kas netika līdz galam izstrādāta. 
