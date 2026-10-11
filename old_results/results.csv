@@ -1,0 +1,4 @@
+﻿timestamp,experiment_name,instance_group,n,k,initial_cost,final_cost,improvement_percent,elapsed_seconds,result_valid,initial_temperature,cooling_rate,iterations_per_temperature,minimum_temperature,max_neighbor_attempts,run_directory
+20261011_120901_645669,small_default,small_default,10,3,577.3567508420318,342.92189133241203,40.60485292112961,2.2751431999495253,True,100.0,0.95,100,0.01,50,results\20261011_120901_645669_small_default
+20261011_134029_429277,small_default,small_default,10,3,695.3289702270198,369.2734327147295,46.89226991446014,2.274168199975975,18000,True,100.0,0.95,100,0.01,50,180,minimum_temperature,100000,300.0,results\20261011_134029_429277_small_default
+20261011_134524_362854,small_default,small_default,3,1,121.26961028399467,121.26961028399467,0.0,0.8348298000637442,18000,True,100.0,0.95,100,0.01,50,180,minimum_temperature,100000,300.0,results\20261011_134524_362854_small_default

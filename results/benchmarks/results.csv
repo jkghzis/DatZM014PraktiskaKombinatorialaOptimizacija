@@ -1,0 +1,2 @@
+﻿timestamp,benchmark_method,n,k,initial_cost,benchmark_cost,benchmark_elapsed_seconds,benchmark_proven_optimal,benchmark_stop_reason,sa_cost,sa_elapsed_seconds,sa_iterations,sa_stop_reason,optimality_gap_percent,run_directory
+20261011_152306_587778,exhaustive_search,10,3,375.09405676347865,301.165436821074,300.00000760005787,False,time_limit_with_solution,301.165436821074,2.1870669999625534,18000,minimum_temperature,,results\benchmarks\20261011_152306_587778_best_known_solution

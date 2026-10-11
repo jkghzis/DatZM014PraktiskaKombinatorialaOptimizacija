@@ -7,18 +7,19 @@ tā, lai kopējais attālums līdz vakcinācijas centriem būtu pēc iespējas m
 starp visiem cilvēkiem un centriem, kā arī katram cilvēkam ir pateikts, no cikiem līdz cikiem 
 viņi tiek uz vakcināciju!
 
-Autors:
+Autors: je21033
 """
-import datetime
 import sys
+import datetime
 import math
-from typing import List, Optional, Tuple
 import uuid
-from dataclasses import dataclass, field
 import random
+import time
+from typing import List, Optional
+from dataclasses import dataclass, field
 from pprint import pprint
 
-APP_NAME = "MAZAISPraktiskaisDarbs"
+APP_NAME = "MAZAISPraktiskaisDarbs - Problēmas sistēma"
 VERSION = "0.0.1"
 id1 = uuid.uuid4()
 """Problem variables"""
@@ -30,11 +31,30 @@ N: int = 10
 VACCINATION_DURATION: datetime.timedelta = datetime.timedelta(minutes=10)
 
 """Simulated annealing variables"""
-INITIAL_TEMPERATURE: float = 100.0
-COOLING_RATE: float = 0.95 # Using geometric cooling, instead of linear cooling.
-ITERATION_PER_TEMPERATURE: int = 100
-MINIMUM_TEMPERATURE: float = 0.01
-MAX_NEIGHBOR_ATTEMPTS: int = 50
+# INITIAL_TEMPERATURE: float = 100.0
+# COOLING_RATE: float = 0.95 # Using geometric cooling, instead of linear cooling.
+# ITERATION_PER_TEMPERATURE: int = 100
+# MINIMUM_TEMPERATURE: float = 0.01
+# MAX_NEIGHBOR_ATTEMPTS: int = 50
+
+
+@dataclass
+class SAConfig:
+    """
+    The SA loop would stop when any of these conditions occurs:
+    - The temperature falls below minimum_temperature.
+    - The iteration count reaches max_iterations.
+    - The elapsed time reaches max_time_seconds.
+    """
+    initial_temperature: float = 100.0
+    cooling_rate: float = 0.95
+    iterations_per_temperature: int = 100   # Number of candidate-generation attempts at each temperature.
+    minimum_temperature: float = 0.01
+    max_neighbor_attempts: int = 50         # Maximum attempts to find a valid neighboring solution within one call to neighbor().
+    # New additions for experiments.
+    max_iterations: int = 100_000           # Maximum total candidate-generation attempts across the entire SA run.
+    max_time_seconds: float = 300.0         # Maximum wall-clock time for the run, in seconds.
+
 
 @dataclass
 class Location:
@@ -192,11 +212,14 @@ class Solution:
         """        
         return sum(d(asg.hum.location, asg.vac_cen.location) for asg in self.assignments)
 
-    def neighbor(self) -> Optional["Solution"]: 
+    def neighbor(
+        self,
+        max_neighbor_attempts: int = SAConfig().max_neighbor_attempts, # TODO will this work for test input?
+    ) -> Optional["Solution"]: 
         """
         Returns a new neighboring solution.
 
-        Uses MAX_NEIGHBOR_ATTEMPTS.
+        Uses SAConfig().max_neighbor_attempts.
 
         It acts as a small dispatcher:
         1. Randomly choose between move_change() and move_swap().
@@ -214,7 +237,7 @@ class Solution:
         Returns:
             list[Assignment]: a new schedule/solution
         """      
-        for _ in range(MAX_NEIGHBOR_ATTEMPTS):
+        for _ in range(max_neighbor_attempts):
             move = random.choice([
                 self.move_change,
                 self.move_swap
@@ -353,7 +376,18 @@ class Solution:
 
         return None
 
-def generate_synthetic_data() -> tuple[
+@dataclass
+class SAExecutionResult:
+    best_solution: Solution
+    iterations: int
+    temperature_levels: int
+    elapsed_seconds: float
+    stop_reason: str
+
+def generate_synthetic_data(
+    n: int = N,
+    k: int = K
+) -> tuple[
     list[Hum],
     list[VacCen],
     list[Assignment]
@@ -361,6 +395,10 @@ def generate_synthetic_data() -> tuple[
     """
     Generate synthetic people, vaccination centers, and a guaranteed
     feasible initial set of assignments.
+
+    Args:
+        n: Number of people to schedule.
+        k: Number of vaccination centers.
 
     Returns:
         humans, vac_cens, guaranteed_assignments
@@ -385,14 +423,14 @@ def generate_synthetic_data() -> tuple[
 
     slots_per_center = day_duration // VACCINATION_DURATION
 
-    if K <= 0 or N <= 0:
-        raise ValueError("K and N must both be positive.")
+    if k <= 0 or n <= 0:
+        raise ValueError("k and n must both be positive.")
 
     # 1. Generate vaccination centers and their appointment slots.
     vac_cens: list[VacCen] = []
     all_slots: list[tuple[VacCen, TimeWindow, int]] = []
 
-    for _ in range(K):
+    for _ in range(k):
         center = VacCen(
             location=Location(
                 x=random.uniform(0, 100),
@@ -410,14 +448,14 @@ def generate_synthetic_data() -> tuple[
         vac_cens.append(center)
 
     # 2. Ensure enough slots exist to schedule everyone.
-    if N > len(all_slots):
+    if n > len(all_slots):
         raise ValueError(
-            f"Cannot schedule {N} people: only "
+            f"Cannot schedule {n} people: only "
             f"{len(all_slots)} slots exist."
         )
 
-    # 3. Choose N distinct slots as guaranteed appointments.
-    selected_slots = random.sample(all_slots, N)
+    # 3. Choose n distinct slots as guaranteed appointments.
+    selected_slots = random.sample(all_slots, n)
 
     hums: list[Hum] = []
     guaranteed_assignments: list[Assignment] = []
@@ -489,7 +527,10 @@ def build_initial_solution(
 
     return initial_solution
 
-def simulated_annealing(initial_solution: Solution) -> Solution:
+def simulated_annealing(
+    initial_solution: Solution,
+    config: SAConfig
+) -> SAExecutionResult:
     """
     The simulated annealing function, that performs the SA
     algorithm on the defined solution in this file.
@@ -498,23 +539,34 @@ def simulated_annealing(initial_solution: Solution) -> Solution:
     and best solution.
 
     Returns:
-        _type_: _description_
+        Solution: a valid schedule solution
     """    
     # 1. Validate the initial state and algorithm parameters.
     if not initial_solution.is_valid():
         raise ValueError("The initial solution must be valid.")
 
-    if INITIAL_TEMPERATURE <= 0:
+    if config.initial_temperature <= 0:
         raise ValueError("Initial temperature must be positive.")
 
-    if not 0 < COOLING_RATE < 1:
+    if not 0 < config.cooling_rate < 1:
         raise ValueError("Cooling rate must be between 0 and 1.")
 
-    if not 0 < MINIMUM_TEMPERATURE < INITIAL_TEMPERATURE:
+    if not 0 < config.minimum_temperature < config.initial_temperature:
         raise ValueError("Minimum temperature must be positive and below the initial temperature.")
 
-    if ITERATION_PER_TEMPERATURE <= 0:
+    if config.iterations_per_temperature <= 0:
         raise ValueError("Iterations per temperature must be positive.")
+
+    if config.max_neighbor_attempts <= 0:
+        raise ValueError("Maximum neighbor attempts must be positive.")
+
+    if config.max_iterations <= 0:
+        raise ValueError("Maximum iterations must be positive.")
+
+    if config.max_time_seconds <= 0:
+        raise ValueError("Maximum time must be positive.")
+
+    start_time = time.perf_counter()
 
     # 2. Initialize the current and best solutions.
     current_solution = initial_solution
@@ -523,15 +575,37 @@ def simulated_annealing(initial_solution: Solution) -> Solution:
     current_cost = current_solution.cost()
     best_cost = current_cost
 
-    temperature = INITIAL_TEMPERATURE
+    temperature = config.initial_temperature
+    iterations = 0
+    temperature_levels = 0
+    stop_reason = "minimum_temperature"
 
     # 3. Repeat the search while the temperature is high enough.
-    while temperature > MINIMUM_TEMPERATURE:
+    while temperature > config.minimum_temperature:
+        temperature_levels += 1
 
-        for _ in range(ITERATION_PER_TEMPERATURE):
+        for _ in range(config.iterations_per_temperature):
+            # Enforce limits before beginning another iteration.
+            elapsed = time.perf_counter() - start_time
+
+            if elapsed >= config.max_time_seconds:
+                stop_reason = "max_time"
+                break
+
+            if iterations >= config.max_iterations:
+                stop_reason = "max_iterations"
+                break
+
+            # One iteration means one neighbor-generation attempt.
+            iterations += 1
 
             # Pick a random neighboring solution.
-            candidate = current_solution.neighbor()
+            candidate = current_solution.neighbor(max_neighbor_attempts=config.max_neighbor_attempts)
+
+            # A single neighbor() call may waste the remaining time.
+            if time.perf_counter() - start_time >= config.max_time_seconds:
+                stop_reason = "max_time"
+                break
 
             # No valid neighbor was found during this attempt.
             if candidate is None:
@@ -550,11 +624,33 @@ def simulated_annealing(initial_solution: Solution) -> Solution:
                     best_solution = candidate
                     best_cost = candidate_cost
 
+        # Stop if either limit was reached during the inner loop.
+        if stop_reason in ("max_time", "max_iterations"):
+            break
+
+        # Check limits before proceeding to another temperature level.
+        if iterations >= config.max_iterations:
+            stop_reason = "max_iterations"
+            break
+
+        if time.perf_counter() - start_time >= config.max_time_seconds:
+            stop_reason = "max_time"
+            break
+
         # 5. Cool the system using geometric cooling.
-        temperature *= COOLING_RATE
+        temperature *= config.cooling_rate
+
+    elapsed_seconds = time.perf_counter() - start_time
 
     # 6. Return the best solution found, not necessarily the last one.
-    return best_solution       
+    # return best_solution
+    return SAExecutionResult(
+        best_solution=best_solution,
+        iterations=iterations,
+        temperature_levels=temperature_levels,
+        elapsed_seconds=elapsed_seconds,
+        stop_reason=stop_reason,
+    )      
 
 def main(argv: Optional[List[str]] = None) -> int:
     """Application control center and terminal process mapping."""
@@ -562,6 +658,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         argv = sys.argv[1:]
     try:
         print(f"[{APP_NAME}] Result: ")
+        #####
         # hums, vac_cens, guaranteed_assignments = generate_synthetic_data()
         # initial_solution = build_initial_solution(
         #     hums,
@@ -574,20 +671,29 @@ def main(argv: Optional[List[str]] = None) -> int:
         # print("Assignments:", len(initial_solution.assignments))
         # print("Initial cost:", initial_solution.cost()) 
         # # pprint(vars(initial_solution), indent=4, width=120)
-        hums, vac_cens, guaranteed_assignments = generate_synthetic_data()
-        initial_solution = build_initial_solution(
-            hums,
-            vac_cens,
-            guaranteed_assignments
-        )
-        initial_cost = initial_solution.cost()
-        best_solution = simulated_annealing(initial_solution)
-        best_cost = best_solution.cost()
-        print("Initial valid:", initial_solution.is_valid())
-        print("Result valid:", best_solution.is_valid())
-        print("Initial cost:", initial_cost)
-        print("Final best cost:", best_cost)
-        print("Improvement:", initial_cost - best_cost)
+        #####
+        # hums, vac_cens, guaranteed_assignments = generate_synthetic_data()
+        # initial_solution = build_initial_solution(
+        #     hums,
+        #     vac_cens,
+        #     guaranteed_assignments
+        # )
+        # initial_cost = initial_solution.cost()
+        # best_solution = simulated_annealing(initial_solution, SAConfig())
+        # best_cost = best_solution.cost()
+        # print("Initial valid:", initial_solution.is_valid())
+        # print("Result valid:", best_solution.is_valid())
+        # print("Initial cost:", initial_cost)
+        # print("Final best cost:", best_cost)
+        # print("Improvement:", initial_cost - best_cost)
+        #####
+        hums, vac_cens, assignments = generate_synthetic_data(n=100, k=10)
+        solution = build_initial_solution(hums, vac_cens, assignments)
+        print("Valid:", solution.is_valid())
+        print("People:", len(solution.hums))
+        print("Centers:", len(solution.vac_cens))
+        print("Assignments:", len(solution.assignments))
+        # TODO saves iteration count and time elapsed.
         return 0
     except ValueError as val_err:
         print(f"Data Input Error: {val_err}", file=sys.stderr)

@@ -1,0 +1,14 @@
+Experiment: small_default
+Description: Small problem with default SA parameters.
+Timestamp: 20261011_134524_362854
+N (people): 3
+K (centers): 1
+Initial cost: 121.269610
+Final cost: 121.269610
+Cost reduction: 0.00%
+Elapsed time: 0.834830 seconds
+Iterations: 18000
+Temperature levels: 180
+Stop reason: minimum_temperature
+Result valid: True
+SA configuration: SAConfig(initial_temperature=100.0, cooling_rate=0.95, iterations_per_temperature=100, minimum_temperature=0.01, max_neighbor_attempts=50, max_iterations=100000, max_time_seconds=300.0)

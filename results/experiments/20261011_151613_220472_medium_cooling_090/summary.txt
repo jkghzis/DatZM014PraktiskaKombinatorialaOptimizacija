@@ -1,0 +1,14 @@
+Experiment: medium_cooling_090
+Description: Medium problem with cooling rate 0.90.
+Timestamp: 20261011_151613_220472
+N (people): 100
+K (centers): 10
+Initial cost: 4900.684851
+Final cost: 1847.736151
+Cost reduction: 62.30%
+Elapsed time: 8.848209 seconds
+Iterations: 8800
+Temperature levels: 88
+Stop reason: minimum_temperature
+Result valid: True
+SA configuration: SAConfig(initial_temperature=100.0, cooling_rate=0.9, iterations_per_temperature=100, minimum_temperature=0.01, max_neighbor_attempts=50, max_iterations=100000, max_time_seconds=300.0)
