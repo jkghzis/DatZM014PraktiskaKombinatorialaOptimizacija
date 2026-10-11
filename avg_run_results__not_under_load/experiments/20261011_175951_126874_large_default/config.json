@@ -1,0 +1,17 @@
+{
+  "name": "large_default",
+  "description": "Large problem with default SA parameters.",
+  "n": 500,
+  "k": 25,
+  "sa_config": {
+    "initial_temperature": 100.0,
+    "cooling_rate": 0.95,
+    "iterations_per_temperature": 100,
+    "minimum_temperature": 0.01,
+    "max_neighbor_attempts": 50,
+    "max_iterations": 100000,
+    "max_time_seconds": 300.0
+  },
+  "instance_group": "large_default",
+  "timestamp": "20261011_175951_126874"
+}

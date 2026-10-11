@@ -1,0 +1,104 @@
+Starting complete test suite.
+
+=== Experiment suite ===
+
+Running small_default: N=10, K=3
+  Repetition 1/3
+  Initial cost: 632.4654
+  Final cost: 307.8119
+  Elapsed: 2.1376 seconds
+  Saved to: results\experiments\20261011_175730_424042_small_default
+  Repetition 2/3
+  Initial cost: 568.8025
+  Final cost: 329.6081
+  Elapsed: 2.1622 seconds
+  Saved to: results\experiments\20261011_175732_594184_small_default
+  Repetition 3/3
+  Initial cost: 555.3667
+  Final cost: 276.8935
+  Elapsed: 2.1429 seconds
+  Saved to: results\experiments\20261011_175734_753321_small_default
+
+Running medium_default: N=100, K=10
+  Repetition 1/3
+  Initial cost: 4652.5093
+  Final cost: 1460.9115
+  Elapsed: 17.4172 seconds
+  Saved to: results\experiments\20261011_175752_191307_medium_default
+  Repetition 2/3
+  Initial cost: 4860.1007
+  Final cost: 1842.4720
+  Elapsed: 17.3310 seconds
+  Saved to: results\experiments\20261011_175809_550389_medium_default
+  Repetition 3/3
+  Initial cost: 4772.7823
+  Final cost: 1601.6066
+  Elapsed: 17.4462 seconds
+  Saved to: results\experiments\20261011_175827_024809_medium_default
+
+Running large_default: N=500, K=25
+  Repetition 1/3
+  Initial cost: 24957.8975
+  Final cost: 6668.8990
+  Elapsed: 84.0714 seconds
+  Saved to: results\experiments\20261011_175951_126874_large_default
+  Repetition 2/3
+  Initial cost: 28052.5331
+  Final cost: 7115.5151
+  Elapsed: 84.5605 seconds
+  Saved to: results\experiments\20261011_180115_758235_large_default
+  Repetition 3/3
+  Initial cost: 24807.5974
+  Final cost: 7611.1730
+  Elapsed: 84.3278 seconds
+  Saved to: results\experiments\20261011_180240_156492_large_default
+
+Cooling comparison repetition 1/3
+  medium_cooling_090: final cost=1774.5124, time=8.5836s
+  Saved to: results\experiments\20261011_180248_798346_medium_cooling_090
+  medium_cooling_095: final cost=1774.5124, time=17.3303s
+  Saved to: results\experiments\20261011_180306_153892_medium_cooling_095
+  medium_cooling_099: final cost=1774.5124, time=88.4644s
+  Saved to: results\experiments\20261011_180434_643927_medium_cooling_099
+
+Cooling comparison repetition 2/3
+  medium_cooling_090: final cost=1785.6986, time=8.5912s
+  Saved to: results\experiments\20261011_180443_262857_medium_cooling_090
+  medium_cooling_095: final cost=1785.6986, time=17.4739s
+  Saved to: results\experiments\20261011_180500_761700_medium_cooling_095
+  medium_cooling_099: final cost=1785.6986, time=89.1979s
+  Saved to: results\experiments\20261011_180629_986302_medium_cooling_099
+
+Cooling comparison repetition 3/3
+  medium_cooling_090: final cost=1542.9839, time=8.6191s
+  Saved to: results\experiments\20261011_180638_623375_medium_cooling_090
+  medium_cooling_095: final cost=1542.9839, time=17.5240s
+  Saved to: results\experiments\20261011_180656_172630_medium_cooling_095
+  medium_cooling_099: final cost=1542.9839, time=89.5048s
+  Saved to: results\experiments\20261011_180825_702592_medium_cooling_099
+
+Experiment averages saved to: results\experiments\averages.csv
+
+=== Benchmark suite ===
+
+Benchmark repetition 1/3
+Benchmark cost: 305.8500465831628
+Proven optimal: False
+SA cost: 305.8500
+Saved to: results\benchmarks\20261011_181327_772731_best_known_solution
+
+Benchmark repetition 2/3
+Benchmark cost: 333.4659145136268
+Proven optimal: False
+SA cost: 333.4659
+Saved to: results\benchmarks\20261011_181829_951768_best_known_solution
+
+Benchmark repetition 3/3
+Benchmark cost: 221.1029263143434
+Proven optimal: False
+SA cost: 221.1029
+Saved to: results\benchmarks\20261011_182332_103877_best_known_solution
+
+Benchmark averages saved to: results\benchmarks\averages.csv
+
+Complete test suite finished.

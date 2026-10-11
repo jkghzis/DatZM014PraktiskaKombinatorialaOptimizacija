@@ -1,0 +1,15 @@
+Benchmark method: exhaustive_search
+Problem people: 10
+Problem centers: 3
+Initial cost: 490.400638
+Benchmark cost: 305.8500465831628
+Benchmark elapsed: 300.000005 seconds
+Benchmark valid: True
+Proven optimal: False
+Benchmark stop reason: time_limit_with_solution
+SA cost: 305.850047
+SA elapsed: 2.043541 seconds
+SA iterations: 18000
+SA stop reason: minimum_temperature
+SA valid: True
+SA optimality gap: Unavailable (optimality not established or optimum is zero)

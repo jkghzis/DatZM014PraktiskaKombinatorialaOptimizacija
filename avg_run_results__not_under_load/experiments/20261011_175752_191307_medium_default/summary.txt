@@ -1,0 +1,14 @@
+Experiment: medium_default
+Description: Medium problem with default SA parameters.
+Timestamp: 20261011_175752_191307
+N (people): 100
+K (centers): 10
+Initial cost: 4652.509291
+Final cost: 1460.911524
+Cost reduction: 68.60%
+Elapsed time: 17.417167 seconds
+Iterations: 18000
+Temperature levels: 180
+Stop reason: minimum_temperature
+Result valid: True
+SA configuration: SAConfig(initial_temperature=100.0, cooling_rate=0.95, iterations_per_temperature=100, minimum_temperature=0.01, max_neighbor_attempts=50, max_iterations=100000, max_time_seconds=300.0)

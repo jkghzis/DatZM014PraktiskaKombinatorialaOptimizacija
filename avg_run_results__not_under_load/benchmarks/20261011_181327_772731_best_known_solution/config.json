@@ -1,0 +1,7 @@
+{
+  "name": "best_known_solution",
+  "description": "Independent benchmark for evaluating solution quality.",
+  "method": "exhaustive_search",
+  "max_time_seconds": 300.0,
+  "timestamp": "20261011_181327_772731"
+}
