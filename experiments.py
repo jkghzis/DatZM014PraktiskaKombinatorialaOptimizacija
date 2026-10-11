@@ -153,7 +153,7 @@ EXPERIMENT_B = {
 BEST_KNOWN_CONFIG = BenchmarkConfig(
     name="best_known_solution",
     description="Independent benchmark for evaluating solution quality.",
-    method="exhaustive_search",
+    method="branch_and_bound_search",
 )
 
 
@@ -578,10 +578,21 @@ def save_benchmark_averages(
     return csv_path
 
 
-def exhaustive_search(
+def branch_and_bound_search(
     problem: Solution,
     deadline: float,
 ) -> tuple[Solution | None, bool]:
+    """
+    Branch-and-bound exhaustive search for finding the minimum-cost valid schedule.
+    This aproach gurantees finding the global optimal solution.
+
+    Args:
+        problem (Solution): a solution
+        deadline (float): the max. amount of time that the algorithm is allowed to run
+
+    Returns:
+        tuple[Solution | None, bool]: the best known solution and if its the global optimum
+    """    
     hums = problem.hums
     vac_cens = problem.vac_cens
 
@@ -700,7 +711,7 @@ BENCHMARK_METHODS: dict[
     str,
     Callable[[Solution, float], tuple[Solution | None, bool]],
 ] = {
-    "exhaustive_search": exhaustive_search,
+    "branch_and_bound_search": branch_and_bound_search,
 }
 
 def run_benchmark(

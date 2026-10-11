@@ -523,9 +523,6 @@ def build_initial_solution(
         vac_cens (list[VacCen]): list of vaccination centres
         guaranteed_assignments (list[Assignment]): list of guranteed assignments
 
-    Raises:
-        RuntimeError: "Generated initial solution unexpectedly violates constraints."
-
     Returns:
         Solution: a new schedule/solution
     """
