@@ -15,37 +15,27 @@ import math
 import uuid
 import random
 import time
+
 from typing import List, Optional
 from dataclasses import dataclass, field
-from pprint import pprint
 
 APP_NAME = "MAZAISPraktiskaisDarbs - Problēmas sistēma"
 VERSION = "0.0.1"
-id1 = uuid.uuid4()
 
-# Vaccination center count.
-K: int = 5
-# Human count.
-N: int = 10
-# Vaccination duration.
-VACCINATION_DURATION: datetime.timedelta = datetime.timedelta(minutes=10)
+K: int = 5 # Vaccination center count.
+N: int = 10 # Human count.
+VACCINATION_DURATION: datetime.timedelta = datetime.timedelta(minutes=10) # Vaccination duration.
 
 @dataclass
 class SAConfig:
-    """
-    The SA loop would stop when any of these conditions occurs:
-    - The temperature falls below minimum_temperature.
-    - The iteration count reaches max_iterations.
-    - The elapsed time reaches max_time_seconds.
-    """
     initial_temperature: float = 100.0
     cooling_rate: float = 0.95
-    iterations_per_temperature: int = 100   # Number of candidate-generation attempts at each temperature.
+    iterations_per_temperature: int = 100   
     minimum_temperature: float = 0.01
-    max_neighbor_attempts: int = 50         # Maximum attempts to find a valid neighboring solution within one call to neighbor().
-    # New additions for experiments.
-    max_iterations: int = 100_000           # Maximum total candidate-generation attempts across the entire SA run.
-    max_time_seconds: float = 300.0         # Maximum wall-clock time for the run, in seconds.
+    max_neighbor_attempts: int = 50         
+    # Mostly used for experiments.
+    max_iterations: int = 100_000           
+    max_time_seconds: float = 300.0         
 
 @dataclass
 class Location:
@@ -125,18 +115,21 @@ def d(a: Location, b: Location) -> float:
 class Solution:
     """
     A represenation of 1 complete vaccination schedule for persons
-    and vaccination centers time windows.
+    and vaccination center time windows.
     
     Class contains methods required to eveluate and change the solution,
     when executing the Simulated Annealing algorithm contained in the function
     simulated_annealing().
 
     The class also holds the humans and vaccination centers currently
-    used for calculating teh assignments. This is mainly for validation
+    used for calculating the assignments. This is mainly for validation
     and cost calculation.
-    """    
-    hums: list[Hum] # Allows to validate that all humans have an appointment.
-    vac_cens: list[VacCen] # Keeps track of all available vaccination centers and their slots (including not assigned centers and slots).
+    """
+    # Allows to validate that all humans have an appointment.
+    hums: list[Hum] 
+    # Keeps track of all available vaccination centers and their 
+    # slots (including not assigned centers and slots).
+    vac_cens: list[VacCen] 
     assignments: list[Assignment] = field(default_factory=list)
     def is_valid(self) -> bool:
         """
@@ -147,8 +140,11 @@ class Solution:
         2. Piešķirtam vakcinācijas laika logam pilnībā jāietilpst personas pieejamības periodā;
         3. Viens laika logs vakcinācijas centrā var būt pieškirt ne vairāk kā vienai personai dotā grafikā;
         4. Piešķirtajam laika logam ir jābūt pieejamam izvēlētajā vakcinācijas centrā
+        
+        Returns:
+            bool: true if valid, otherwise false
         """        
-        # 1. Every required person has exactly one assignment.
+        # 1. Katrai personai ir piešķirts tieši 1 pieraksts uz vakcinācijas centru;
         # Check both the number of assignments and the identity of each person.
         human_ids = {hum.id for hum in self.hums}
         assigned_human_ids = [asg.hum.id for asg in self.assignments]
@@ -161,7 +157,7 @@ class Solution:
         if len(assigned_human_ids) != len(set(assigned_human_ids)):
             return False
 
-        # 2. Each appointment fits entirely within the person's availability.
+        # 2. Piešķirtam vakcinācijas laika logam pilnībā jāietilpst personas pieejamības periodā;
         for asg in self.assignments:
             if not (
                 asg.time_window.from_time 
@@ -171,12 +167,13 @@ class Solution:
             ):
                return False
 
-        # 3. Each appointment slot is assigned at most once.
+        # 3. Viens laika logs vakcinācijas centrā var būt pieškirt ne vairāk kā vienai personai dotā grafikā;
         time_window_ids = [asg.time_window.id for asg in self.assignments]
-        if len(time_window_ids) != len(set(time_window_ids)): # Check for uniqueness
+        # Check for uniqueness
+        if len(time_window_ids) != len(set(time_window_ids)): 
             return False
         
-        # 4. Each appointment slot belongs to the assigned center.
+        # 4. Piešķirtajam laika logam ir jābūt pieejamam izvēlētajā vakcinācijas centrā
         for asg in self.assignments:
             center_slot_ids = {
                 tw.id for tw in asg.vac_cen.time_windows
@@ -195,7 +192,7 @@ class Solution:
         should be relegated to caluclating the numerical cost and not validating
         the solution. 
 
-        Note: It doesn't decide whether to accept a cost or cool the temperature; 
+        Note: It doesn't decide whether to accept a cost; 
         those are responsibilities of the SA algorithm.
 
         Returns:
@@ -210,13 +207,11 @@ class Solution:
         """
         Returns a new neighboring solution.
 
-        Uses SAConfig().max_neighbor_attempts.
-
         It acts as a small dispatcher:
         1. Randomly choose between move_change() and move_swap().
         2. Attempt the chosen move.
         3. If it fails, optionally try the other move type or retry a limited number of times.
-        4. Return the resulting valid neighbor, or None.
+        4. Return the resulting valid neighbor. Otherwise return None.
 
         Possible moves:
         - change: nejauši izvēlētai personai tiek nomainīts pieraksts vakcinācijas centrā uz citu, 
@@ -245,11 +240,16 @@ class Solution:
         """
         Randomly moves 1 Hum to another VacCen TimeWindow or to a TimeWindow
         of the current VacCen.
+        
+        Steps:
         1. Select a person randomly.
-        2. Find appointment slots that are free and fit that person's availability.
+        2. Find appointment slots that are free and fit that persons availability.
         3. Select one of those slots, potentially at the same center or another center.
-        4. Create a new schedule with that person's assignment changed.
-        5. Return the new schedule, or None if no valid move can be found.
+        4. Create a new schedule with that persons assignment changed.
+        5. Return the new schedule if valid, otherwise return None
+        
+        Returns:
+            list[Assignment]: a new schedule/solution
         """        
         if not self.assignments:
             return None
@@ -312,11 +312,16 @@ class Solution:
     def move_swap(self) -> Optional["Solution"]: 
         """
         Randomly swaps 2 Hum VacCen, TimeWindows with each other.
+        
+        Steps:
         1. Select two different people.
         2. Propose exchanging their appointments.
         3. Check whether each person's new appointment fits their availability.
         4. Construct a new schedule and validate it.
         5. Return the new schedule, or None if the move is invalid.
+        
+        Returns:
+            list[Assignment]: a new schedule/solution
         """        
         if len(self.assignments) < 2:
             return None
@@ -439,6 +444,7 @@ def generate_synthetic_data(
         vac_cens.append(center)
 
     # 2. Ensure enough slots exist to schedule everyone.
+    # Makes it so that the returned result is valid.
     if n > len(all_slots):
         raise ValueError(
             f"Cannot schedule {n} people: only "
@@ -511,6 +517,17 @@ def build_initial_solution(
 ) -> Solution:
     """
     Construct and validate the guaranteed feasible initial solution.
+    
+    Args:
+        hums (list[Hum]): list of humans
+        vac_cens (list[VacCen]): list of vaccination centres
+        guaranteed_assignments (list[Assignment]): list of guranteed assignments
+
+    Raises:
+        RuntimeError: "Generated initial solution unexpectedly violates constraints."
+
+    Returns:
+        Solution: a new schedule/solution
     """
     initial_solution = Solution(hums=hums, vac_cens=vac_cens, assignments=guaranteed_assignments)
     if not initial_solution.is_valid():
@@ -524,13 +541,16 @@ def simulated_annealing(
 ) -> SAExecutionResult:
     """
     The simulated annealing function, that performs the SA
-    algorithm on the defined solution in this file.
+    algorithm.
 
-    Function controls temperature, acceptance probability, iterations, 
-    and best solution.
+    Function controls:
+    - temperature, 
+    - acceptance probability, 
+    - iterations, 
+    - and best solution.
 
     Returns:
-        Solution: a valid schedule solution
+        Solution: a resulting schedule/solution
     """    
     # 1. Validate the initial state and algorithm parameters.
     if not initial_solution.is_valid():
@@ -649,35 +669,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         argv = sys.argv[1:]
     try:
         print(f"[{APP_NAME}] Result: ")
-        #####
-        # hums, vac_cens, guaranteed_assignments = generate_synthetic_data()
-        # initial_solution = build_initial_solution(
-        #     hums,
-        #     vac_cens,
-        #     guaranteed_assignments
-        # )
-        # print("Valid:", initial_solution.is_valid())
-        # print("People:", len(initial_solution.hums))
-        # print("Centers:", len(initial_solution.vac_cens))
-        # print("Assignments:", len(initial_solution.assignments))
-        # print("Initial cost:", initial_solution.cost()) 
-        # # pprint(vars(initial_solution), indent=4, width=120)
-        #####
-        # hums, vac_cens, guaranteed_assignments = generate_synthetic_data()
-        # initial_solution = build_initial_solution(
-        #     hums,
-        #     vac_cens,
-        #     guaranteed_assignments
-        # )
-        # initial_cost = initial_solution.cost()
-        # best_solution = simulated_annealing(initial_solution, SAConfig())
-        # best_cost = best_solution.cost()
-        # print("Initial valid:", initial_solution.is_valid())
-        # print("Result valid:", best_solution.is_valid())
-        # print("Initial cost:", initial_cost)
-        # print("Final best cost:", best_cost)
-        # print("Improvement:", initial_cost - best_cost)
-        #####
         hums, vac_cens, assignments = generate_synthetic_data(n=100, k=10)
         solution = build_initial_solution(hums, vac_cens, assignments)
         print("Valid:", solution.is_valid())

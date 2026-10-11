@@ -2,8 +2,10 @@
 """
 MAZAISPraktiskaisDarbs
 
-Experiment configuration and command-line entry point
-for the vaccination scheduling Simulated Annealing project.
+Eksperimenta fails domāts testēt SA algoritmu un tā struktūras
+atkārtojamos testa piemēros.
+
+Autors: je21033
 """
 
 import argparse
@@ -40,7 +42,6 @@ REPETITIONS: int = 3
 @dataclass(frozen=True)
 class ExperimentConfig:
     """Configuration for one SA experiment."""
-
     name: str
     description: str
     n: int
@@ -52,7 +53,6 @@ class ExperimentConfig:
 @dataclass(frozen=True)
 class BenchmarkConfig:
     """Configuration for the best-known-solution benchmark."""
-
     name: str
     description: str
     method: str
@@ -61,6 +61,7 @@ class BenchmarkConfig:
 
 @dataclass
 class ExperimentResult:
+    """SA experiment result."""
     config: ExperimentConfig
     initial_solution: Solution
     initial_cost: float
@@ -75,6 +76,7 @@ class ExperimentResult:
 
 @dataclass
 class BenchmarkResult:
+    """SA benchmark result."""
     method: str
     solution: Solution | None
     cost: float | None
@@ -798,16 +800,6 @@ def run_experiment(
 
 
 def test_runner() -> None:
-    # config = EXPERIMENTS["small_default"]
-    # result = run_experiment(config)
-    # output_dir = save_experiment_result(result)
-
-    # print(f"Experiment: {result.config.name}")
-    # print(f"Initial cost: {result.initial_cost:.4f}")
-    # print(f"Final cost: {result.final_cost:.4f}")
-    # print(f"Elapsed time: {result.elapsed_seconds:.4f} seconds")
-    # print(f"Valid result: {result.result_valid}")
-    # print(f"Results saved to: {output_dir}")
     result = run_experiment(EXPERIMENTS["small_default"])
     output_dir = save_experiment_result(result)
 
