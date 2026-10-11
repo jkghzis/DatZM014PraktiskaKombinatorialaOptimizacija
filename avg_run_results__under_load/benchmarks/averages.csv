@@ -1,0 +1,2 @@
+﻿runs,n,k,average_benchmark_cost,runs_with_benchmark_solution,proven_optimal_runs,average_benchmark_elapsed_seconds,average_sa_cost,average_sa_elapsed_seconds,average_sa_iterations,average_optimality_gap_percent
+3,10,3,326.9519802805832,3,0,300.0000061999696,326.9519802805832,2.151941500022076,18000.0,

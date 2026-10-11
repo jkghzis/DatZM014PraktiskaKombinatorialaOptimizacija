@@ -35,6 +35,8 @@ RESULTS_DIR = Path("results")
 EXPERIMENT_RESULTS_DIR = RESULTS_DIR / "experiments"
 BENCHMARK_RESULTS_DIR = RESULTS_DIR / "benchmarks"
 
+REPETITIONS: int = 3
+
 @dataclass(frozen=True)
 class ExperimentConfig:
     """Configuration for one SA experiment."""
@@ -466,6 +468,114 @@ def save_benchmark_result(
     return run_dir
 
 
+def save_experiment_averages(
+    results: list[ExperimentResult],
+    output_root: Path = EXPERIMENT_RESULTS_DIR,
+) -> Path:
+    output_root.mkdir(parents=True, exist_ok=True)
+    csv_path = output_root / "averages.csv"
+
+    grouped: dict[str, list[ExperimentResult]] = {}
+
+    for result in results:
+        grouped.setdefault(result.config.name, []).append(result)
+
+    rows = []
+
+    for name, runs in grouped.items():
+        count = len(runs)
+
+        improvements = [
+            (run.initial_cost - run.final_cost) / run.initial_cost * 100
+            if run.initial_cost != 0
+            else 0.0
+            for run in runs
+        ]
+
+        rows.append({
+            "experiment_name": name,
+            "runs": count,
+            "n": runs[0].config.n,
+            "k": runs[0].config.k,
+            "average_initial_cost": sum(r.initial_cost for r in runs) / count,
+            "average_final_cost": sum(r.final_cost for r in runs) / count,
+            "average_improvement_percent": sum(improvements) / count,
+            "average_elapsed_seconds": sum(r.elapsed_seconds for r in runs) / count,
+            "average_iterations": sum(r.iterations for r in runs) / count,
+            "valid_runs": sum(r.result_valid for r in runs),
+        })
+
+    with csv_path.open("w", newline="", encoding="utf-8-sig") as file:
+        writer = csv.DictWriter(file, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return csv_path
+
+
+def save_benchmark_averages(
+    results: list[tuple[BenchmarkResult, ExperimentResult]],
+) -> Path:
+    BENCHMARK_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    csv_path = BENCHMARK_RESULTS_DIR / "averages.csv"
+
+    benchmark_runs = [benchmark for benchmark, _ in results]
+    sa_runs = [sa for _, sa in results]
+
+    available_costs = [
+        result.cost for result in benchmark_runs
+        if result.cost is not None
+    ]
+
+    proven_runs = [
+        benchmark for benchmark in benchmark_runs
+        if benchmark.proven_optimal
+    ]
+
+    optimality_gaps = [
+        (sa.final_cost - benchmark.cost) / benchmark.cost * 100
+        for benchmark, sa in results
+        if (
+            benchmark.proven_optimal
+            and benchmark.cost is not None
+            and benchmark.cost > 0
+        )
+    ]
+
+    count = len(results)
+
+    row = {
+        "runs": count,
+        "n": len(results[0][1].initial_solution.hums),
+        "k": len(results[0][1].initial_solution.vac_cens),
+        "average_benchmark_cost": (
+            sum(available_costs) / len(available_costs)
+            if available_costs else None
+        ),
+        "runs_with_benchmark_solution": len(available_costs),
+        "proven_optimal_runs": len(proven_runs),
+        "average_benchmark_elapsed_seconds": (
+            sum(r.elapsed_seconds for r in benchmark_runs) / count
+        ),
+        "average_sa_cost": sum(r.final_cost for r in sa_runs) / count,
+        "average_sa_elapsed_seconds": (
+            sum(r.elapsed_seconds for r in sa_runs) / count
+        ),
+        "average_sa_iterations": sum(r.iterations for r in sa_runs) / count,
+        "average_optimality_gap_percent": (
+            sum(optimality_gaps) / len(optimality_gaps)
+            if optimality_gaps else None
+        ),
+    }
+
+    with csv_path.open("w", newline="", encoding="utf-8-sig") as file:
+        writer = csv.DictWriter(file, fieldnames=row.keys())
+        writer.writeheader()
+        writer.writerow(row)
+
+    return csv_path
+
+
 def exhaustive_search(
     problem: Solution,
     deadline: float,
@@ -754,7 +864,9 @@ def test_benchmark() -> None:
 def run_experiment_suite() -> None:
     print("\n=== Experiment suite ===")
 
-    # Experiment A: Compare problem sizes using default SA parameters.
+    all_results: list[ExperimentResult] = []
+
+    # Experiment A: repeat each problem size on independent instances.
     for name in (
         "small_default",
         "medium_default",
@@ -764,17 +876,21 @@ def run_experiment_suite() -> None:
 
         print(f"\nRunning {name}: N={config.n}, K={config.k}")
 
-        result = run_experiment(config)
-        output_dir = save_experiment_result(result)
+        for repetition in range(1, REPETITIONS + 1):
+            print(f"  Repetition {repetition}/{REPETITIONS}")
 
-        print(f"Initial cost: {result.initial_cost:.4f}")
-        print(f"Final cost: {result.final_cost:.4f}")
-        print(f"Iterations: {result.iterations}")
-        print(f"Elapsed: {result.elapsed_seconds:.4f} seconds")
-        print(f"Stop reason: {result.stop_reason}")
-        print(f"Saved to: {output_dir}")
+            result = run_experiment(config)
+            all_results.append(result)
 
-    # Experiment B: Compare cooling rates on one shared instance.
+            output_dir = save_experiment_result(result)
+
+            print(f"  Initial cost: {result.initial_cost:.4f}")
+            print(f"  Final cost: {result.final_cost:.4f}")
+            print(f"  Elapsed: {result.elapsed_seconds:.4f} seconds")
+            print(f"  Saved to: {output_dir}")
+
+    # Experiment B: compare cooling rates on the same instance
+    # within each repetition.
     cooling_names = (
         "medium_cooling_090",
         "medium_cooling_095",
@@ -783,99 +899,94 @@ def run_experiment_suite() -> None:
 
     first_config = EXPERIMENTS[cooling_names[0]]
 
-    hums, vac_cens, assignments = generate_synthetic_data(
-        n=first_config.n,
-        k=first_config.k,
-    )
+    for repetition in range(1, REPETITIONS + 1):
+        hums, vac_cens, assignments = generate_synthetic_data(
+            n=first_config.n,
+            k=first_config.k,
+        )
 
-    shared_initial_solution = build_initial_solution(
-        hums,
-        vac_cens,
-        assignments,
-    )
-
-    print(
-        "\nCooling-rate comparison: "
-        f"shared instance N={first_config.n}, K={first_config.k}"
-    )
-
-    for name in cooling_names:
-        config = EXPERIMENTS[name]
+        shared_initial_solution = build_initial_solution(
+            hums, vac_cens, assignments
+        )
 
         print(
-            f"\nRunning {name}: "
-            f"cooling_rate={config.sa_config.cooling_rate}"
+            f"\nCooling comparison repetition "
+            f"{repetition}/{REPETITIONS}"
         )
 
-        result = run_experiment(
-            config,
-            initial_solution=shared_initial_solution,
-        )
+        for name in cooling_names:
+            config = EXPERIMENTS[name]
 
-        output_dir = save_experiment_result(result)
+            result = run_experiment(
+                config,
+                initial_solution=shared_initial_solution,
+            )
+            all_results.append(result)
 
-        print(f"Initial cost: {result.initial_cost:.4f}")
-        print(f"Final cost: {result.final_cost:.4f}")
-        print(f"Iterations: {result.iterations}")
-        print(f"Elapsed: {result.elapsed_seconds:.4f} seconds")
-        print(f"Stop reason: {result.stop_reason}")
-        print(f"Saved to: {output_dir}")
+            output_dir = save_experiment_result(result)
+
+            print(
+                f"  {name}: final cost={result.final_cost:.4f}, "
+                f"time={result.elapsed_seconds:.4f}s"
+            )
+            print(f"  Saved to: {output_dir}")
+
+    averages_path = save_experiment_averages(all_results)
+    print(f"\nExperiment averages saved to: {averages_path}")
 
 
 def run_benchmark_suite() -> None:
     print("\n=== Benchmark suite ===")
 
-    # Use a tiny problem so exhaustive search is practical.
-    # * 10 and 3 will not reach the proven optimal solution in 300s
     n = 10
     k = 3
+    all_results: list[tuple[BenchmarkResult, ExperimentResult]] = []
 
-    hums, vac_cens, assignments = generate_synthetic_data(n=n, k=k)
-
-    initial_solution = build_initial_solution(
-        hums,
-        vac_cens,
-        assignments,
-    )
-
-    print(f"Generated shared benchmark instance: N={n}, K={k}")
-
-    benchmark = run_benchmark(
-        initial_solution,
-        BEST_KNOWN_CONFIG.method,
-        max_time_seconds=BEST_KNOWN_CONFIG.max_time_seconds,
-    )
-
-    # Run SA on the exact same initial solution.
     sa_config = ExperimentConfig(
         name="benchmark_sa_comparison",
         description="SA comparison against the benchmark on the same instance.",
         n=n,
         k=k,
         sa_config=DEFAULT_SA_CONFIG,
-        instance_group="benchmark_tiny",
+        instance_group="benchmark",
     )
 
-    sa_result = run_experiment(
-        sa_config,
-        initial_solution=initial_solution,
-    )
+    for repetition in range(1, REPETITIONS + 1):
+        print(f"\nBenchmark repetition {repetition}/{REPETITIONS}")
 
-    output_dir = save_benchmark_result(
-        benchmark=benchmark,
-        initial_solution=initial_solution,
-        sa_result=sa_result,
-        config=BEST_KNOWN_CONFIG,
-    )
+        hums, vac_cens, assignments = generate_synthetic_data(n=n, k=k)
+        initial_solution = build_initial_solution(
+            hums, vac_cens, assignments
+        )
 
-    print(f"Benchmark cost: {benchmark.cost}")
-    print(f"Benchmark elapsed: {benchmark.elapsed_seconds:.6f} seconds")
-    print(f"Proven optimal: {benchmark.proven_optimal}")
-    print(f"Benchmark stop reason: {benchmark.stop_reason}")
-    print(f"SA cost: {sa_result.final_cost:.4f}")
-    print(f"SA iterations: {sa_result.iterations}")
-    print(f"SA stop reason: {sa_result.stop_reason}")
-    print(f"Results saved to: {output_dir}")
+        benchmark = run_benchmark(
+            initial_solution,
+            BEST_KNOWN_CONFIG.method,
+            max_time_seconds=BEST_KNOWN_CONFIG.max_time_seconds,
+        )
+
+        # Compare SA against the benchmark on this exact same instance.
+        sa_result = run_experiment(
+            sa_config,
+            initial_solution=initial_solution,
+        )
+
+        all_results.append((benchmark, sa_result))
+
+        output_dir = save_benchmark_result(
+            benchmark=benchmark,
+            initial_solution=initial_solution,
+            sa_result=sa_result,
+            config=BEST_KNOWN_CONFIG,
+        )
+
+        print(f"Benchmark cost: {benchmark.cost}")
+        print(f"Proven optimal: {benchmark.proven_optimal}")
+        print(f"SA cost: {sa_result.final_cost:.4f}")
+        print(f"Saved to: {output_dir}")
+
+    averages_path = save_benchmark_averages(all_results)
+    print(f"\nBenchmark averages saved to: {averages_path}")
 
 
 def run_all_tests() -> None:

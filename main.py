@@ -22,21 +22,13 @@ from pprint import pprint
 APP_NAME = "MAZAISPraktiskaisDarbs - Problēmas sistēma"
 VERSION = "0.0.1"
 id1 = uuid.uuid4()
-"""Problem variables"""
+
 # Vaccination center count.
 K: int = 5
 # Human count.
 N: int = 10
 # Vaccination duration.
 VACCINATION_DURATION: datetime.timedelta = datetime.timedelta(minutes=10)
-
-"""Simulated annealing variables"""
-# INITIAL_TEMPERATURE: float = 100.0
-# COOLING_RATE: float = 0.95 # Using geometric cooling, instead of linear cooling.
-# ITERATION_PER_TEMPERATURE: int = 100
-# MINIMUM_TEMPERATURE: float = 0.01
-# MAX_NEIGHBOR_ATTEMPTS: int = 50
-
 
 @dataclass
 class SAConfig:
@@ -54,7 +46,6 @@ class SAConfig:
     # New additions for experiments.
     max_iterations: int = 100_000           # Maximum total candidate-generation attempts across the entire SA run.
     max_time_seconds: float = 300.0         # Maximum wall-clock time for the run, in seconds.
-
 
 @dataclass
 class Location:

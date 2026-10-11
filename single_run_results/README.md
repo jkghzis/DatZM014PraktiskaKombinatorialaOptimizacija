@@ -1,0 +1,2 @@
+These results were gained by running the test suite, without the consideration of calculating averages.
+These results were still kept to give a shorter look into the created system and its produced results.
