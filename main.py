@@ -664,7 +664,7 @@ def simulated_annealing(
     )      
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """Application control center and terminal process mapping."""
+    """Application entry point."""
     if argv is None:
         argv = sys.argv[1:]
     try:
